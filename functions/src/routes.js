@@ -17,6 +17,12 @@ routes.post("/verifyToken", authorization.verifyToken);
 
 routes.post("/createLocation", locationController.createLocation);
 
+routes.post("/getUserFavorites", userController.getUserFavorites);
+
+routes.post("/addUserFavorites", userController.addUserFavorite);
+
+routes.post("/removeUserFavorites", userController.removeUserFavorite);
+
 routes.get("/getLocations", locationController.getLocations);
 
 module.exports = routes;

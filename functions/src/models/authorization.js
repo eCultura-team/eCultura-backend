@@ -3,17 +3,16 @@ const admin = require("firebase-admin");
 const auth = admin.auth();
 
 module.exports = {
-  verifyToken(req, res) {
-    const token = req.headers["authorization"].slice(7);
-    const {uid} = req.body;
+  async verifyToken(uid, token) {
+    const cleanToken = token?.slice(7);
 
-    auth.verifyIdToken(token).then((decodedToken) => {
+    return auth.verifyIdToken(cleanToken).then((decodedToken) => {
       if (decodedToken.uid !== uid) {
-        res.send({message: "Unauthorized", status: 401});
+        return false;
       }
-      res.send({message: "Authorized", status: 200});
+      return true;
     }).catch((error) => {
-      res.send({error, status: 401});
+      return false;
     });
   },
 };
