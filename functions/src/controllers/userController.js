@@ -21,16 +21,19 @@ module.exports = {
     const token = req.headers["authorization"];
     const authorized = await authorization.verifyToken(uid, token);
 
-    const favorites = [];
+    let favorites;
 
     if (authorized) {
       const favoritesRef = firestore.collection("favorites");
       favoritesRef.where("uid", "==", uid).get()
           .then((querySnapshot) => {
             querySnapshot.forEach((doc) => {
-              favorites.push(doc.data());
-              res.send({favorites: favorites});
+              favorites = [...doc.data().idLocation];
+              res.send(doc.data());
             });
+            if (favorites === null) {
+              res.send({message: "No document found."});
+            }
           })
           .catch((error) => {
             res.send({message: "Error getting documents:", error});
@@ -47,9 +50,19 @@ module.exports = {
     if (authorized) {
       const docRef = firestore.collection("favorites").doc(uid);
 
-      docRef.update({
-        idLocation: admin.firestore.FieldValue.arrayUnion(idLocation),
-      }).then(res.send({"message": "Favorite successfully added!", "status": 201})).catch((error) => res.send(error));
+      docRef.get()
+          .then((docSnapshot) => {
+            if (docSnapshot.exists) {
+              docRef.update({
+                idLocation: admin.firestore.FieldValue.arrayUnion(idLocation),
+              }).then(res.send({"message": "Favorite successfully added!", "status": 201})).catch((error) => res.send(error));
+            } else {
+              docRef.set({
+                idLocation: admin.firestore.FieldValue.arrayUnion(idLocation),
+                uid: uid,
+              }).then(res.send({"message": "Favorites successfully created!", "status": 201})).catch((error) => res.send(error));
+            }
+          });
     } else {
       res.send({status: 401, message: "Unauthorized user"});
     }
@@ -68,6 +81,15 @@ module.exports = {
     } else {
       res.send({status: 401, message: "Unauthorized user"});
     }
+  },
+  async getUserData(req, res) {
+    const token = req.headers["authorization"]?.slice(7);
+
+    auth.verifyIdToken(token).then((decodedToken) => {
+      res.send({"uid": decodedToken.uid, "email": decodedToken.email, "status": 200});
+    }).catch((error) => {
+      res.send(error);
+    });
   },
 };
 
